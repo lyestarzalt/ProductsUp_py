@@ -1,8 +1,9 @@
+# Author: Lyes Tarzalt
+
 import requests
 from productup_exception import BadRequestError, UnauthorizedError, ForbiddenError, \
     NotFoundError, MethodNotAllowedError,\
         NotAcceptableError, GoneError, InternalServerError
-# Basic auth class for PorductsUp
 
 
 class ProductUpAuth:
@@ -33,9 +34,11 @@ class ProductUpAuth:
                 response.status_code, None)
             if exception_class:
                 raise exception_class(
-                    response.status_code, response.json()["error"])
+                    response.status_code, response.json().get("message"))
         return response.json()
 
 if __name__ == '__main__':
+    
     auth = ProductUpAuth("1234", "simsalabim")
-    response = auth.make_request("https://platform-api.productsup.io/")
+    response = auth.make_request(
+        "https://platform-api.productsup.io/platform/v2/projects", method="get", data='{"name":"test"}')

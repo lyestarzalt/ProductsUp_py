@@ -1,20 +1,25 @@
+# Author: Lyes Tarzalt
 class ProductsUpError(Exception):
     def __init__(self, status_code, message):
         self.status_code = status_code
         self.message = message
-
     def __str__(self):
-        return f"{self.status_code}: {self.message}"
+        return f"Code:{self.status_code} {self.message}"
 
 
 class BadRequestError(ProductsUpError):
     """Your request was malformed"""
-    pass
+
+    def __str__(self):
+        return f"Code: {self.status_code} {self.message}"
 
 
 class UnauthorizedError(ProductsUpError):
     """Invalid authentication token used"""
-    pass
+
+    def __str__(self):
+        return f"Code:{self.status_code} Unauthorized"
+
 
 
 class ForbiddenError(ProductsUpError):
