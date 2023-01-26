@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import List
-
+from api_errors import BadRequestError
 
 @dataclass
 class Project:
@@ -41,12 +41,12 @@ class Projects:
             raise Exception(data["error"])
         return Project(**data["Projects"][0])
 
-    def update_project(self, project_id, data):
+    def update_project(self, project_id, data:Project):
         url = f"{self.BASE_URL}/{project_id}"
         response = self.auth.make_request(url, method='put', data=data)
         return response.json()
 
-    def delete_project(self, project_id):
+    def delete_project(self, project_id):      
         url = f"{self.BASE_URL}/{project_id}"
         response = self.auth.make_request(url, method='delete')
         return response.json()
