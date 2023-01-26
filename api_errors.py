@@ -1,4 +1,4 @@
-class ApiError(Exception):
+class ProductsUpError(Exception):
     def __init__(self, status_code, message):
         self.status_code = status_code
         self.message = message
@@ -7,34 +7,41 @@ class ApiError(Exception):
         return f"{self.status_code}: {self.message}"
 
 
-class BadRequestError(ApiError):
+class BadRequestError(ProductsUpError):
     """Your request was malformed"""
     pass
 
-class UnauthorizedError(ApiError):
+
+class UnauthorizedError(ProductsUpError):
     """Invalid authentication token used"""
     pass
 
-class ForbiddenError(ApiError):
+
+class ForbiddenError(ProductsUpError):
     """The entity requested is hidden for administrators only"""
     pass
 
-class NotFoundError(ApiError):
+
+class NotFoundError(ProductsUpError):
     """The specified entity could not be found"""
     pass
 
-class MethodNotAllowedError(ApiError):
+
+class MethodNotAllowedError(ProductsUpError):
     """You tried to access a entity with an invalid method"""
     pass
 
-class NotAcceptableError(ApiError):
+
+class NotAcceptableError(ProductsUpError):
     """You requested a format that isn't json"""
     pass
 
-class GoneError(ApiError):
+
+class GoneError(ProductsUpError):
     """The entity requested has been removed from our servers"""
     pass
 
-class InternalServerError(ApiError):
+
+class InternalServerError(ProductsUpError):
     """Temporarily offline for maintenance"""
     pass
