@@ -34,8 +34,9 @@ class Projects:
     def get_project(self, project_id: int) -> Project:
         _url = f"{Projects.BASE_URL}/{project_id}"
         response = self.auth.make_request(_url, method='get')
-        if not response["success"]:
+        if not response.json().get("success",False):
             raise ProductsUpError(response["error"])
+        response = response.json()
         projects_data = [{'project_id': project_data.pop(
             'id'), **project_data} for project_data in response["Projects"]]
         return Project(**projects_data[0])

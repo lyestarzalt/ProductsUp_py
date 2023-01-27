@@ -34,7 +34,9 @@ class SiteAlreadyExistsError(ProductsUpError):
 class EmptySiteError(ProductsUpError):
     """The Site has no information"""
     pass
-
+class InvalidDataError(ProductsUpError):
+    """you provided invalid data"""
+    pass
 
 class BadRequestError(ProductsUpError):
     """Your request was malformed"""
@@ -78,3 +80,5 @@ class GoneError(ProductsUpError):
 class InternalServerError(ProductsUpError):
     """Temporarily offline for maintenance"""
     pass
+
+

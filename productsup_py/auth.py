@@ -3,7 +3,7 @@
 import requests
 from productsup_py.productup_exception import BadRequestError, UnauthorizedError, ForbiddenError, \
     NotFoundError, MethodNotAllowedError,\
-    NotAcceptableError, GoneError, InternalServerError, ProductsUpError
+    NotAcceptableError, GoneError, InternalServerError
 
 
 class ProductUpAuth:
@@ -26,7 +26,7 @@ class ProductUpAuth:
     def get_token(self) -> dict:
         return {"X-Auth-Token": self.token}
 
-    def make_request(self, url: str, method: str = None, data: dict = None) -> dict:
+    def make_request(self, url: str, method: str, data: dict = None) -> requests.Response:
         token = self.get_token()
         if method == "get":
             response = self.session.get(url=url, headers=token)
@@ -37,12 +37,8 @@ class ProductUpAuth:
         elif method == "delete":
             response = self.session.delete(url=url, headers=token, data=data)
 
-        if response.status_code not in self.status_code_exceptions:
+        if response.status_code in self.status_code_exceptions:
+            raise self.status_code_exceptions[response.status_code](
+                response.status_code, response.json()["message"])
+        else:
             return response
-        elif response.status_code in self.status_code_exceptions:
-            raise self.status_code_exceptions[response.status_code](response.status_code, response.json()["message"])
-
-
-if __name__ == '__main__':
-
-    pass
