@@ -3,7 +3,7 @@
 import requests
 from productup_exception import BadRequestError, UnauthorizedError, ForbiddenError, \
     NotFoundError, MethodNotAllowedError,\
-        NotAcceptableError, GoneError, InternalServerError
+    NotAcceptableError, GoneError, InternalServerError
 
 
 class ProductUpAuth:
@@ -11,6 +11,7 @@ class ProductUpAuth:
         self.client_id = client_id
         self.client_secret = client_secret
         self.token = f"{client_id}:{client_secret}"
+        self.session = requests.Session()
         self.status_code_exceptions = {
             400: BadRequestError,
             401: UnauthorizedError,
@@ -22,13 +23,20 @@ class ProductUpAuth:
             500: InternalServerError
         }
 
-    def get_headers(self) -> dict:
+    def get_token(self) -> dict:
         return {"X-Auth-Token": self.token}
 
     def make_request(self, url: str, method: str = None, data: dict = None) -> dict:
-        headers = self.get_headers()
-        response = requests.request(
-            url=url, method=method, headers=headers, data=data)
+        token = self.get_token()
+        if method == "get":
+            response = self.session.get(url=url, headers=token)
+        elif method == "post":
+            response = self.session.post(url=url, headers=token, data=data)
+        elif method == "put":
+            response = self.session.put(url=url, headers=token, data=data)
+        elif method == "delete":
+            response = self.session.delete(url=url, headers=token, data=data)
+
         if response.status_code not in range(200, 299):
             exception_class = self.status_code_exceptions.get(
                 response.status_code, None)
@@ -37,8 +45,7 @@ class ProductUpAuth:
                     response.status_code, response.json().get("message"))
         return response.json()
 
+
 if __name__ == '__main__':
-    
-    auth = ProductUpAuth("1234", "simsalabim")
-    response = auth.make_request(
-        "https://platform-api.productsup.io/platform/v2/projects", method="get", data='{"name":"test"}')
+
+    pass
