@@ -1,8 +1,8 @@
 # Author: Lyes Tarzalt
 from enum import Enum
 from dataclasses import dataclass
-from productup_exception import ProductsUpError, SiteNotFoundError, EmptySiteError
-from projects import Project, Projects
+from productsup_py.productup_exception import ProductsUpError, SiteNotFoundError, EmptySiteError
+from productsup_py.projects import Project, Projects
 from datetime import datetime
 
 

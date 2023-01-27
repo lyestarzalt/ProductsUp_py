@@ -1,7 +1,7 @@
 # Author: Lyes Tarzalt
 
 import requests
-from productup_exception import BadRequestError, UnauthorizedError, ForbiddenError, \
+from productsup_py.productup_exception import BadRequestError, UnauthorizedError, ForbiddenError, \
     NotFoundError, MethodNotAllowedError,\
     NotAcceptableError, GoneError, InternalServerError, ProductsUpError
 
