@@ -3,7 +3,7 @@
 import requests
 from productup_exception import BadRequestError, UnauthorizedError, ForbiddenError, \
     NotFoundError, MethodNotAllowedError,\
-    NotAcceptableError, GoneError, InternalServerError
+    NotAcceptableError, GoneError, InternalServerError, ProductsUpError
 
 
 class ProductUpAuth:
@@ -42,6 +42,9 @@ class ProductUpAuth:
                 response.status_code, None)
             if exception_class:
                 raise exception_class(
+                    response.status_code, response.json().get("message"))
+            else:
+                raise ProductsUpError(
                     response.status_code, response.json().get("message"))
         return response.json()
 
