@@ -37,16 +37,10 @@ class ProductUpAuth:
         elif method == "delete":
             response = self.session.delete(url=url, headers=token, data=data)
 
-        if response.status_code not in range(200, 299):
-            exception_class = self.status_code_exceptions.get(
-                response.status_code, None)
-            if exception_class:
-                raise exception_class(
-                    response.status_code, response.json().get("message"))
-            else:
-                raise ProductsUpError(
-                    response.status_code, response.json().get("message"))
-        return response.json()
+        if response.status_code not in self.status_code_exceptions:
+            return response
+        elif response.status_code in self.status_code_exceptions:
+            raise self.status_code_exceptions[response.status_code](response.status_code, response.json()["message"])
 
 
 if __name__ == '__main__':

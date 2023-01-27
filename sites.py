@@ -1,9 +1,9 @@
 # Author: Lyes Tarzalt
 from enum import Enum
 from dataclasses import dataclass
-from productup_exception import ProductsUpError
+from productup_exception import ProductsUpError, SiteNotFoundError, EmptySiteError
 from projects import Project, Projects
-from datetime import datetime 
+from datetime import datetime
 
 
 class SiteStatus(Enum):
@@ -24,33 +24,17 @@ class SiteProcessingStatus(Enum):
     DONE = "Done"
 
 
-
 @dataclass
 class SiteImport:
     import_id: int
     site_id: int
     import_time: str
-    import_time_utc : str
+    import_time_utc: str
     product_count: int
     pid: str
-    links: list = None 
-    
+    links: list = None
 
-"""
 
-id	integer	Internal identifier
-site_id	integer	Identifier of the referenced site
-site_channel_id	string	Internal id for the combination of an Export and Site
-export_time	dateTime	Time when the process was finished
-export_start	dateTime	Time when the process was started
-product_count	integer	Number of products exported
-pid	string	Internal identifier for the process
-product_count_new	integer	Number of new products (only for delta exports)
-product_count_modified	integer	Number of updated products (only for delta exports)
-product_count_deleted	integer	Number of deleted products (only for delta exports)
-product_count_unchanged	integer	Number of unchanged products (only for delta exports)
-uploaded	integer	Indicator if the export was uploaded to it's destination
-"""
 @dataclass
 class SiteChannelHistory:
     history_id: int
@@ -66,9 +50,10 @@ class SiteChannelHistory:
     product_count_unchanged: int
     uploaded: int
     product_count_now: int
-    product_count_previous : int
+    product_count_previous: int
     product_count_skipped: int
-    process_status : SiteProcessingStatus
+    process_status: SiteProcessingStatus
+
 
 @dataclass
 class SiteChannel:
@@ -77,10 +62,9 @@ class SiteChannel:
     channel_id: int
     name: str
     export_name: str
-    feed_destinations : list
+    feed_destinations: list
     export_history: SiteChannelHistory
     links: list = None
-
 
 
 @dataclass
@@ -91,7 +75,7 @@ class SiteError:
     data: list
     site_id: int
     message: str
-    datetime : str = None
+    datetime: str = None
     links: list = None
 
 
@@ -107,14 +91,11 @@ class Site:
     import_schedule: str
     id_column: str
     processing_status: SiteProcessingStatus
-    created_at: str
-    import_history: list[SiteImport]
-    errors: list[SiteError]
-    channels : list[SiteChannel]
+    created_at: str = None
+    import_history: list[SiteImport] = None
+    errors: list[SiteError] = None
+    channels: list[SiteChannel] = None
     links: list = None
-    
-
-
 
 
 class Sites:
@@ -123,47 +104,58 @@ class Sites:
     def __init__(self, auth) -> None:
         self.auth = auth
         self.projects = Projects(auth)
-        
-        
+
     def _get_channels(self, site_id: int) -> list[SiteChannel]:
         _url = f"{Sites.BASE_URL}/sites/{site_id}/channels"
         response = self.auth.make_request(_url, method='get')
-        
+
         if not response.get("success", False):
             raise ProductsUpError(response["error"])
-        
+
         channel_data = []
         for channel in response['Channels']:
             channel['entity_id'] = channel.pop('id')
-            channel['export_history'] = self._get_channel_history(site_id, channel['entity_id'])
+            channel['export_history'] = self._get_channel_history(
+                site_id, channel['entity_id'])
             channel_data.append(channel)
-            
+
         return [SiteChannel(**channel) for channel in channel_data]
-    
+
     def _get_channel_history(self, site_id: int, channel_id: int) -> list[SiteChannelHistory]:
         _url = f"{Sites.BASE_URL}/sites/{site_id}/channels/{channel_id}/history"
         response = self.auth.make_request(_url, method='get')
-        
+
         if not response.get("success", False):
             raise ProductsUpError(response["error"])
-        
+
         channel_history_data = []
         for channel_history in response.get('Channels')[0].get('history'):
             channel_history['history_id'] = channel_history.pop('id')
             channel_history_data.append(channel_history)
         return [SiteChannelHistory(**channel_history) for channel_history in channel_history_data]
-    
+
     def _get_errors(self, site_id: int) -> list[SiteError]:
+        """_summary_
+
+        Args:
+            site_id (int): _description_
+
+        Raises:
+            ProductsUpError: _description_
+
+        Returns:
+            list[SiteError]: _description_
+        """
         _url = f"{Sites.BASE_URL}/sites/{site_id}/errors"
         response = self.auth.make_request(_url, method='get')
-        
+
         if not response.get("success", False):
             raise ProductsUpError(response["error"])
-        
+
         error_data = []
         for error in response['Errors']:
             error['error_id'] = error.pop('id')
-            
+
             error_data.append(error)
         return [SiteError(**error) for error in error_data]
 
@@ -178,17 +170,33 @@ class Sites:
             import_['import_id'] = import_.pop('id')
             import_data.append(import_)
         return [SiteImport(**import_) for import_ in import_data]
-    
-    
-    
+
     def get_site(self, site_id: int) -> Site:
+        """ Get all the information related to a site
+
+        Args:
+            site_id (int): Site ID the unique identifier of a site
+
+        Raises:
+            SiteNotFoundError: if the site_id is not found
+            SiteNotFoundError: _description_
+
+        Returns:
+            Site: Site object
+        """
         url = f"{Sites.BASE_URL}/sites/{site_id}"
-        response = self.auth.make_request(url, method='get')
+        try:
+            response = self.auth.make_request(url, method='get')
+        except ProductsUpError as e:
+            if e.status_code == 404:
+                raise SiteNotFoundError(site_id=site_id)
+            else:
+                raise e
 
-        if not response.get("success", False):
-            raise ProductsUpError(response["error"])
-
-        site_data = response["Sites"][0]
+        site_data = response.json().get("Sites", [])
+        if not site_data:
+            raise EmptySiteError()
+        site_data = site_data[0]
         site_data['site_id'] = site_data.pop('id')
         site_data['project'] = site_data.pop('project_id')
         site_data['project'] = self.projects.get_project(site_data['project'])
@@ -201,12 +209,10 @@ class Sites:
         site_data['import_history'] = self._get_imports(site_id)
         site_data['channels'] = self._get_channels(site_id)
         site_data['errors'] = self._get_errors(site_id)
-        
-        
-        
         return Site(**site_data)
 
     def get_all_sites(self) -> list[Site]:
+
         url = f"{Sites.BASE_URL}/sites"
         response = self.auth.make_request(url, method='get')
 
