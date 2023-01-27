@@ -21,7 +21,8 @@ The wrapper raises exceptions in case of common error cases, such as invalid aut
 In case of any issues or for feature request, please raise an issue on the GitHub repository.
 
 ## License
-This package is released under the MIT license.
+Copyright (c) <year>, <copyright holder>
+All rights reserved.
 
-
-
+This source code is licensed under the BSD-style license found in the
+LICENSE file in the root directory of this source tree. 
