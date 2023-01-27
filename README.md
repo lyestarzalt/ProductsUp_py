@@ -21,7 +21,7 @@ The wrapper raises exceptions in case of common error cases, such as invalid aut
 In case of any issues or for feature request, please raise an issue on the GitHub repository.
 
 ## License
-Copyright (c) <year>, <copyright holder>
+Copyright (c) 2023, Tarzalt
 All rights reserved.
 
 This source code is licensed under the BSD-style license found in the
