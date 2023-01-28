@@ -1,4 +1,5 @@
 # Author: Lyes Tarzalt
+import aiohttp
 
 import requests
 from productsup_py.productup_exception import BadRequestError, UnauthorizedError, ForbiddenError, \
@@ -8,10 +9,10 @@ from productsup_py.productup_exception import BadRequestError, UnauthorizedError
 
 class ProductUpAuth:
     def __init__(self, client_id, client_secret):
-        self.client_id = client_id
-        self.client_secret = client_secret
         self.token = f"{client_id}:{client_secret}"
+    
         self.session = requests.Session()
+        
         self.status_code_exceptions = {
             400: BadRequestError,
             401: UnauthorizedError,
@@ -26,7 +27,7 @@ class ProductUpAuth:
     def get_token(self) -> dict:
         return {"X-Auth-Token": self.token}
 
-    def make_request(self, url: str, method: str, data: dict = None) -> requests.Response:
+    def make_request(self, url: str, method: str, data: dict = {}) -> requests.Response:
         token = self.get_token()
         if method == "get":
             response = self.session.get(url=url, headers=token)
@@ -36,6 +37,8 @@ class ProductUpAuth:
             response = self.session.put(url=url, headers=token, data=data)
         elif method == "delete":
             response = self.session.delete(url=url, headers=token, data=data)
+        else:
+            raise ValueError("Method not allowed")
 
         if response.status_code in self.status_code_exceptions:
             raise self.status_code_exceptions[response.status_code](

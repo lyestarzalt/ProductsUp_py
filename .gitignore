@@ -164,3 +164,4 @@ cython_debug/
 # testing 
 test.py
 .vscode/launch.json
+.vscode/settings.json

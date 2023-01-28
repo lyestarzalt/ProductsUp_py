@@ -4,6 +4,7 @@ class ProductsUpError(Exception):
         self.status_code = status_code
         self.message = message
         self.site_id = site_id
+        self.project_id = project_id
 
     def __str__(self):
         return f"Code:{self.status_code} {self.message}"
@@ -34,6 +35,7 @@ class SiteAlreadyExistsError(ProductsUpError):
 class EmptySiteError(ProductsUpError):
     """The Site has no information"""
     pass
+
 class InvalidDataError(ProductsUpError):
     """you provided invalid data"""
     pass
@@ -78,7 +80,5 @@ class GoneError(ProductsUpError):
 
 
 class InternalServerError(ProductsUpError):
-    """Temporarily offline for maintenance"""
+    """ ProductsUP is temporarily offline for maintenance"""
     pass
-
-

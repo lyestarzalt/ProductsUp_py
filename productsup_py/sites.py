@@ -1,122 +1,21 @@
 # Author: Lyes Tarzalt
-from enum import Enum
-from dataclasses import dataclass
-from productsup_py.productup_exception import ProductsUpError, SiteNotFoundError, InvalidDataError, EmptySiteError
-from productsup_py.projects import Projects, Project
+from productsup_py.productup_exception import ProductsUpError, SiteNotFoundError, EmptySiteError
+from productsup_py.projects import Projects
+from productsup_py.models import SiteStatus, SiteProcessingStatus, \
+    SiteImport, SiteChannelHistory, SiteChannel, SiteError, Site, Project
 from datetime import datetime
 import json
-from typing import List, Union
-
-
-class SiteStatus(Enum):
-    # The site is fully operational; data can be pushed via the API and
-    # the site will import and export
-    ACTIVE = "active"
-    # The site can receive data via the API and import the data; it will
-    # however not export data
-    PAUSED_UPLOAD = "paused_upload"
-    # The site will block any data send via the API, neither imports or
-    # exports can be done
-    DISABLED = "disabled"
-
-
-class SiteProcessingStatus(Enum):
-
-    RUNNING = "Running"
-    DONE = "Done"
-
-
-@dataclass
-class SiteImport:
-    """ A site import is a record of the import of a site."""
-
-    import_id: int
-    site_id: int
-    import_time: datetime
-    import_time_utc: datetime
-    product_count: int
-    pid: str
-    links: list = None
-
-
-@dataclass
-class SiteChannelHistory:
-    """ A site channel history is a record of the export of a site to a channel."""
-
-    history_id: int
-    site_id: int
-    site_channel_id: int
-    export_time: str
-    export_start: str
-    product_count: int
-    pid: str
-    product_count_new: int
-    product_count_modified: int
-    product_count_deleted: int
-    product_count_unchanged: int
-    uploaded: int
-    product_count_now: int
-    product_count_previous: int
-    product_count_skipped: int
-    process_status: SiteProcessingStatus
-
-
-@dataclass
-class SiteChannel:
-    """ Channels are targets of the data (like "Google Shopping", Export csv,..)"""
-
-    entity_id: int
-    site_id: int
-    channel_id: int
-    name: str
-    export_name: str
-    feed_destinations: list
-    export_history: SiteChannelHistory
-    links: list = None
-
-
-@dataclass
-class SiteError:
-    """A site error is an error that occurred during the import or export of a site."""
-
-    error_id: int
-    pid: str
-    error: int
-    data: list
-    site_id: int
-    message: str
-    datetime: str = None
-    links: list = None
-
-
-@dataclass
-class Site:
-    """Sites are the smallest entity, below projects, in the Productsup platform."""
-
-    site_id: int
-    title: str
-    status: SiteStatus
-    # incase of get_site it will be a project object and in case of get_all_sites it will be an int
-    project: Union[Project, int]
-    import_schedule: str
-    id_column: str
-    processing_status: SiteProcessingStatus
-    created_at: datetime = None
-    import_history: list[SiteImport] = None
-    errors: list[SiteError] = None
-    channels: list[SiteChannel] = None
-    links: list = None
 
 
 class Sites:
-
     BASE_URL = 'https://platform-api.productsup.io/platform/v2'
 
     def __init__(self, auth) -> None:
         self.auth = auth
         self.projects = Projects(auth)
 
-    def str_to_datetime(self, date: str) -> datetime:
+    @staticmethod
+    def str_to_datetime(date: str) -> datetime:
         try:
             return datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
         except ValueError:
@@ -162,6 +61,11 @@ class Sites:
         error_data = []
         for error in response_body.get('Errors'):
             error['error_id'] = error.pop('id')
+            if error.get('datetime',None): 
+                # rename datetime to error_datetime because datetime is we have a class with the same name
+                error['error_datetime'] = error.pop('datetime')
+                error['error_datetime'] = self.str_to_datetime(
+                    error['error_datetime'])
 
             error_data.append(error)
         return [SiteError(**error) for error in error_data]
@@ -184,8 +88,8 @@ class Sites:
             import_data.append(import_)
         return [SiteImport(**import_) for import_ in import_data]
 
-    def _constract_site(self, response: str, site_id: int) -> Site:
-        site_data = response.json().get("Sites", [])
+    def _construct_site(self, response: str, site_id: int) -> Site:
+        site_data = response.json().get("Sites", [])  # type: ignore
         if not site_data:
             raise EmptySiteError()
         site_data = site_data[0]
@@ -214,7 +118,7 @@ class Sites:
                 raise SiteNotFoundError(site_id=site_id)
             else:
                 raise e
-        return self._constract_site(response=response, site_id=site_id)
+        return self._construct_site(response=response, site_id=site_id)
 
     def get_all_sites(self) -> list[Site]:
 
@@ -236,7 +140,8 @@ class Sites:
 
         return [Site(**site_data) for site_data in sites_data]
 
-    def create_site(self, project_id: int, title: str, import_schedule: str, reference: str = None, id_column: str = None, status: str = None):
+    def create_site(self, project_id: int, title: str, import_schedule: str = None, reference: str = None,  # type: ignore
+                    id_column: str = None, status: str = None):  # type: ignore
         data = {
             "title": title,
             "reference": reference,
@@ -252,8 +157,8 @@ class Sites:
 
     def edit_site(self, site_id, title=None, reference=None,
                   project_id=None, id_column=None, status=None, import_schedule=None):
-        site_info = self.get_site(site_id)
-        
+        site_info: Site = self.get_site(site_id)
+
         # To simplify the process of editing the import schedule, we will accept a
         # dict with the keys "TZ" and "cron" and convert it to the correct format
         # NOTE: there is a bug with the api when setting UTC as the timezone.
@@ -261,11 +166,11 @@ class Sites:
             import_schedule = f"{import_schedule.get('TZ', 'UTC')}\n{import_schedule.get('cron')}"
         else:
             import_schedule = site_info.import_schedule
-        
+
         data = {
             'id': site_id,
             'title': title if title is not None else site_info.title,
-            'project_id': project_id if project_id is not None else site_info.project.project_id,
+            'project_id': project_id if project_id is not None else site_info.project.project_id,  # type: ignore
             'id_column': id_column if id_column is not None else site_info.id_column,
             'status': status if status is not None else site_info.status,
             'import_schedule': import_schedule
@@ -278,10 +183,10 @@ class Sites:
             raise ProductsUpError(
                 status_code=response.status_code, message=response_body.get("message"))
 
-        return self._constract_site(response=response, site_id=site_id)
+        return self._construct_site(response=response, site_id=site_id)
 
     def delete_site(self, site_id: int):
-        url = f"{Site.BASE_URL}/sites/{site_id}"
+        url = f"{Site.BASE_URL}/sites/{site_id}"  # type: ignore
         response = self.auth.make_request(url, method='delete')
         if not response.get("success", False):
             raise ProductsUpError(response.status_code,
