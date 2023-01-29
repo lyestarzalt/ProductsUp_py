@@ -1,5 +1,5 @@
 # Author: Lyes Tarzalt
-from productsup_py.productup_exception import ProductsUpError, SiteNotFoundError, EmptySiteError
+import productsup_py.productup_exception as pex
 from productsup_py.projects import Projects
 from productsup_py.models import SiteStatus, SiteProcessingStatus, \
     SiteImport, SiteChannelHistory, SiteChannel, SiteError, Site, Project
@@ -28,7 +28,7 @@ class Sites:
         response = self.auth.make_request(_url, method='get')
         response_body = response.json()
         if not response_body.get("success", False):
-            raise ProductsUpError(response["error"])
+            raise pex.ProductsUpError(response["error"])
 
         channel_data = []
         for channel in response_body['Channels']:
@@ -43,7 +43,7 @@ class Sites:
         response = self.auth.make_request(_url, method='get')
         response_body = response.json()
         if not response_body.get("success", False):
-            raise ProductsUpError(response_body["message"])
+            raise pex.ProductsUpError(response_body["message"])
 
         channel_history_data = []
         for channel_history in response_body.get('Channels')[0].get('history'):
@@ -56,7 +56,7 @@ class Sites:
         response = self.auth.make_request(_url, method='get')
         response_body = response.json()
         if not response_body.get("success", False):
-            raise ProductsUpError(response["error"])
+            raise pex.ProductsUpError(response["error"])
 
         error_data = []
         for error in response_body.get('Errors'):
@@ -75,7 +75,7 @@ class Sites:
         response = self.auth.make_request(url, method='get')
         response_body = response.json()
         if not response_body.get("success", False):
-            raise ProductsUpError(response["error"])
+            raise pex.ProductsUpError(response["error"])
         import_data = []
         if not response_body.get('Importhistory'):
             return []
@@ -91,7 +91,7 @@ class Sites:
     def _construct_site(self, response: str, site_id: int) -> Site:
         site_data = response.json().get("Sites", [])  # type: ignore
         if not site_data:
-            raise EmptySiteError()
+            raise pex.EmptySiteError()
         site_data = site_data[0]
         site_data['site_id'] = site_data.pop('id')
         site_data['project'] = site_data.pop('project_id')
@@ -113,9 +113,9 @@ class Sites:
         url = f"{Sites.BASE_URL}/sites/{site_id}"
         try:
             response = self.auth.make_request(url, method='get')
-        except ProductsUpError as e:
+        except pex.ProductsUpError as e:
             if e.status_code == 404:
-                raise SiteNotFoundError(site_id=site_id)
+                raise pex.SiteNotFoundError(site_id=site_id)
             else:
                 raise e
         return self._construct_site(response=response, site_id=site_id)
@@ -126,7 +126,7 @@ class Sites:
         response = self.auth.make_request(url, method='get')
 
         if not response.get("success", False):
-            raise ProductsUpError(response["error"])
+            raise pex.ProductsUpError(response["error"])
 
         sites_data = []
         for site_data in response["Sites"]:
@@ -180,15 +180,49 @@ class Sites:
             url, method='put', data=json.dumps(data))
         response_body = response.json()
         if not response_body.get("success", False):
-            raise ProductsUpError(
+            raise pex.ProductsUpError(
                 status_code=response.status_code, message=response_body.get("message"))
 
         return self._construct_site(response=response, site_id=site_id)
 
-    def delete_site(self, site_id: int):
+    def delete_site(self, site_id: int) -> bool:
         url = f"{Site.BASE_URL}/sites/{site_id}"  # type: ignore
         response = self.auth.make_request(url, method='delete')
         if not response.get("success", False):
-            raise ProductsUpError(response.status_code,
+            raise pex.ProductsUpError(response.status_code,
                                   response.get("message"))
-        return 'Site deleted successfully'
+        return True
+    
+    def last_run_information(self, site_id: int):
+        pass
+    
+    def trigger_action(self, site_id: int, action: str = 'all') -> str:
+        """Trigger a processing action. 
+        
+        Available actions are:
+        "import"
+        "export-all"
+        "all"
+        	
+        Args:
+            site_id (int): Site you want to trigger processing for
+            action (str, mandatory): Action value. Defaults to 'all'.
+
+        Raises:
+            pex.TooManyRequestsError: The API is rate limiting your request or 
+            a process is already in the current queue.
+            pex.ProductsUpError: Other error
+
+        Returns:
+            str: process_id
+        """        
+        _url = f"{Sites.BASE_URL}/process/{site_id}"
+        response = self.auth.make_request(_url, method='post', data=json.dumps({"action": action}))
+        response_body = response.json()
+        if not response_body.get("success", False) and response.status_code == 429:
+            raise pex.TooManyRequestsError(
+                response.status_code, response_body.get("message"))
+        elif not response_body.get("success", False):
+            raise pex.ProductsUpError(
+                response.status_code, response_body.get("message"))
+        return response_body.get("process_id")

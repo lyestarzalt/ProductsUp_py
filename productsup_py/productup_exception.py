@@ -82,3 +82,9 @@ class GoneError(ProductsUpError):
 class InternalServerError(ProductsUpError):
     """ ProductsUP is temporarily offline for maintenance"""
     pass
+
+class TooManyRequestsError(ProductsUpError):
+    """The API is rate limiting your request"""
+    def __str__(self):
+        return f"Code:{self.status_code} Too many requests."
+    pass
