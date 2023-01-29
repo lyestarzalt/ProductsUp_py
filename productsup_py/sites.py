@@ -1,5 +1,5 @@
 # Author: Lyes Tarzalt
-import productsup_py.productup_exception as pex
+import productsup_py.errors as pex
 from productsup_py.projects import Projects
 from productsup_py.models import SiteStatus, SiteProcessingStatus, \
     SiteImport, SiteChannelHistory, SiteChannel, SiteError, Site, Project
@@ -13,6 +13,7 @@ class Sites:
     def __init__(self, auth) -> None:
         self.auth = auth
         self.projects = Projects(auth)
+        
 
     @staticmethod
     def str_to_datetime(date: str) -> datetime:
@@ -194,6 +195,7 @@ class Sites:
         return True
     
     def last_run_information(self, site_id: int):
+        
         pass
     
     def trigger_action(self, site_id: int, action: str = 'all') -> str:
@@ -214,15 +216,22 @@ class Sites:
             pex.ProductsUpError: Other error
 
         Returns:
-            str: process_id
+            str: process id
         """        
         _url = f"{Sites.BASE_URL}/process/{site_id}"
         response = self.auth.make_request(_url, method='post', data=json.dumps({"action": action}))
         response_body = response.json()
         if not response_body.get("success", False) and response.status_code == 429:
             raise pex.TooManyRequestsError(
-                response.status_code, response_body.get("message"))
+                response.status_code, response_body.get("message")) from None 
         elif not response_body.get("success", False):
             raise pex.ProductsUpError(
                 response.status_code, response_body.get("message"))
         return response_body.get("process_id")
+
+    def get_status(self,site_id: int, pid:str) -> str:
+        _url = f"{Sites.BASE_URL}/sites/{site_id}/process/{pid}"
+        response = self.auth.make_request(_url, method='post')
+        response_body = response.json()
+        status = response_body.get("status", 'unknown')
+        return status

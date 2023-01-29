@@ -1,7 +1,7 @@
 # Author: Lyes Tarzalt
 from dataclasses import dataclass, field
 from typing import List
-from productsup_py.productup_exception import ProductsUpError
+from productsup_py.errors.productup_exception import ProductsUpError
 
 @dataclass
 class Project:

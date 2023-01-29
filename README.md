@@ -1,11 +1,11 @@
-# ProductsUp API Wrapper
+# ProductsUpPy
 
 This is a simple Python wrapper around the ProductsUp platform API. It allows you to easily interact with the ProductsUp platform using Python code.
 
 ## Features
 
 Easy to use interface
-Support most ProductsUp platfrom API endpoints
+Support most ProductsUp platform API endpoints
 Exception handling for common error cases
 
 ## Installation

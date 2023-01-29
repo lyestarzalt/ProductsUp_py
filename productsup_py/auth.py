@@ -1,8 +1,9 @@
 # Author: Lyes Tarzalt
+# ProductsUpPy is a Python wrapper for the ProductsUp API.
 import aiohttp
 
 import requests
-from productsup_py.productup_exception import BadRequestError, UnauthorizedError, ForbiddenError, \
+from productsup_py.errors.productup_exception import BadRequestError, UnauthorizedError, ForbiddenError, \
     NotFoundError, MethodNotAllowedError,\
     NotAcceptableError, GoneError, InternalServerError
 
@@ -10,9 +11,9 @@ from productsup_py.productup_exception import BadRequestError, UnauthorizedError
 class ProductUpAuth:
     def __init__(self, client_id, client_secret):
         self.token = f"{client_id}:{client_secret}"
-    
+
         self.session = requests.Session()
-        
+
         self.status_code_exceptions = {
             400: BadRequestError,
             401: UnauthorizedError,
@@ -39,9 +40,9 @@ class ProductUpAuth:
             response = self.session.delete(url=url, headers=token, data=data)
         else:
             raise ValueError("Method not allowed")
-
+        response_body = response.json()
         if response.status_code in self.status_code_exceptions:
             raise self.status_code_exceptions[response.status_code](
-                response.status_code, response.json()["message"])
+                response.status_code, response_body["message"])
         else:
             return response
