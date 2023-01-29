@@ -1,5 +1,6 @@
 # Author: Lyes Tarzalt
 from dataclasses import dataclass, field
+import json
 from typing import List
 from productsup_py.errors.productup_exception import ProductsUpError
 
@@ -19,50 +20,114 @@ class Projects:
         self.auth = auth
 
     def list_all_projects(self) -> list[Project]:
+        """Lists all or one projects in your account .
+
+        Raises:
+            ProductsUpError
+
+        Returns:
+            list[Project]: List of Project objects
+        """        
+        
         url = f"{Projects.BASE_URL}"
         response = self.auth.make_request(url, method='get')
-        data = response
-        if not data["success"]:
-            raise ProductsUpError(data["error"])
+        response_body = response.json()
+        if not response_body.get("success", False):
+            raise ProductsUpError(response_body.get("message"))
         projects_data = [{'project_id': project_data.pop(
-            'id'), **project_data} for project_data in data["Projects"]]
+            'id'), **project_data} for project_data in response_body.get("Projects", [])]
 
         return [Project(**project_data) for project_data in projects_data]
 
     def get_project(self, project_id: int) -> Project:
+        """Get a specific project by its ID.
+
+        Args:
+            project_id (int): project id
+
+        Raises:
+            ProductsUpError
+
+        Returns:
+            Project: Project object
+        """        
         _url = f"{Projects.BASE_URL}/{project_id}"
         response = self.auth.make_request(_url, method='get')
-        if not response.json().get("success", False):
-            raise ProductsUpError(response["error"])
-        response = response.json()
+        response_body = response.json()
+
+        if not response_body.get('success', False):
+            raise ProductsUpError(response_body.get("message"))
+    
         projects_data = [{'project_id': project_data.pop(
-            'id'), **project_data} for project_data in response["Projects"]]
+            'id'), **project_data} for project_data in response_body.get("Projects")]
         return Project(**projects_data[0])
 
     def create_project(self, project_name: str) -> Project:
-        data = {'name': project_name}
-        url = f"{Projects.BASE_URL}/"
-        response = self.auth.make_request(url, method='post', json=data)
+        """Create a new project.
 
-        if not response["success"]:
-            raise ProductsUpError(response.status_code, response["message"])
+        Args:
+            project_name (str): Project name
+
+        Raises:
+            ProductsUpError
+
+        Returns:
+            Project: Project object
+        """        
+        
+        url = f"{Projects.BASE_URL}"
+        response = self.auth.make_request(
+            url, method='post', data=json.dumps({'name': project_name}))
+        
+        response_body = response.json()
+        
+        if not response_body.get("success", False):
+            raise ProductsUpError(response.status_code,
+                                  response_body["message"])
         projects_data = [{'project_id': project_data.pop(
-            'id'), **project_data} for project_data in response["Projects"]]
+            'id'), **project_data} for project_data in response_body.get("Projects")]
         return Project(**projects_data[0])
 
-    def update_project(self, project_id, data: dict):
-        url = f"{Projects.BASE_URL}/{project_id}"
-        response = self.auth.make_request(url, method='put', data=data)
-        if not response.get("success", False):
-            raise ProductsUpError(response.status_code, data.get("message"))
-        projects_data = [{'project_id': project_data.pop(
-            'id'), **project_data} for project_data in response["Projects"]]
-        return Project(**projects_data[0])
+    def update_project(self, project_id, name: str):
+        """Update a project.
 
-    def delete_project(self, project_id):
+        Args:
+            project_id (_type_): project id
+            name (str): project name
+
+        Raises:
+            ProductsUpError: 
+
+        Returns:
+            _type_: Project object
+        """        
         url = f"{Projects.BASE_URL}/{project_id}"
-        response = self.auth.make_request(url, method='delete')
+        response = self.auth.make_request(url, method='put', data=json.dumps({"name": name}))
+        response_body = response.json()
         if not response.get("success", False):
             raise ProductsUpError(response.status_code,
-                                  response.get("message"))
-        return 'Project deleted successfully'
+                                  response_body.get("message"))
+        projects_data = [{'project_id': project_data.pop(
+            'id'), **project_data} for project_data in response_body.get("Projects")]
+        return Project(**projects_data[0])
+
+    def delete_project(self, project_id) -> bool:
+        """Delete a project.
+
+        Args:
+            project_id (_type_): project id
+
+        Raises:
+            ProductsUpError: 
+
+        Returns:
+            str: _description_
+        """        
+        url = f"{Projects.BASE_URL}/{project_id}"
+        response = self.auth.make_request(url, method='delete')
+        response_body = response.json()
+        if not response_body.get("success", False):
+            raise ProductsUpError(response.status_code,
+                                  response_body.get("message"))
+            
+        return True

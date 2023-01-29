@@ -4,7 +4,8 @@ from enum import Enum
 from datetime import datetime
 from typing import Union
 
-
+""" Each dataclass is a model of the data returned by the API
+"""
 @dataclass
 class Project:
 

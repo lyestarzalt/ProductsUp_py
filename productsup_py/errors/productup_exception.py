@@ -36,9 +36,11 @@ class EmptySiteError(ProductsUpError):
     """The Site has no information"""
     pass
 
+
 class InvalidDataError(ProductsUpError):
     """you provided invalid data"""
     pass
+
 
 class BadRequestError(ProductsUpError):
     """Your request was malformed"""
@@ -83,8 +85,10 @@ class InternalServerError(ProductsUpError):
     """ ProductsUP is temporarily offline for maintenance"""
     pass
 
+
 class TooManyRequestsError(ProductsUpError):
     """The API is rate limiting your request"""
+
     def __str__(self):
         return f"Code:{self.status_code} Too many requests."
     pass
