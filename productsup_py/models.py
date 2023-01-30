@@ -12,7 +12,7 @@ class Project:
     project_id: str
     name: str
     created_at: str
-    links: list = field(repr=False)
+    links: Union[list, None] = field(default_factory=list, repr=False)
 
 
 class SiteStatus(Enum):
@@ -43,7 +43,7 @@ class SiteImport:
     import_time_utc: datetime
     product_count: int
     pid: str
-    links: Union[list, None] = field(default_factory=list)
+    links: Union[list, None] = field(default_factory=list, repr=False)
 
 
 @dataclass
@@ -79,7 +79,7 @@ class SiteChannel:
     export_name: str
     feed_destinations: list
     export_history: SiteChannelHistory
-    links: Union[list, None] = None
+    links: Union[list, None] = field(default_factory=list, repr=False)
 
 
 @dataclass
@@ -93,7 +93,7 @@ class SiteError:
     site_id: int
     message: str
     error_datetime: Union[datetime,None] = None
-    links: Union[list, None] = None
+    links: Union[list, None] = field(default_factory=list, repr=False)
 
 
 @dataclass
@@ -112,4 +112,4 @@ class Site:
     import_history: list[SiteImport] = field(default_factory=list)
     errors: list[SiteError] = field(default_factory=list)
     channels: list[SiteChannel] = field(default_factory=list)
-    links: Union[list, None] = field(default_factory=list)
+    links: Union[list, None] = field(default_factory=list, repr=False)
