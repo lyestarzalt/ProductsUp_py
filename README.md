@@ -12,6 +12,10 @@ Exception handling for common error cases
 
 You can install the package using pip:
 
+```console
+pip install productsup-py
+```
+
 ## Usage
 
 ```python
@@ -22,7 +26,7 @@ pu_auth = pu.ProductUpAuth(1234, 'mknjbhvgcd')
 # Next, create a Projects object
 example_project = pu.Projects(pu_auth)
 
-project = example_project.get_project(28569)
+project = example_project.get_project(28532)
 
 print("Project ID:", project.project_id)
 print("Project Name:", project.name)
@@ -31,7 +35,7 @@ print("Project Creation Date:", project.created_at)
 
 ``` console
 Output:
-Project ID: 28569
+Project ID: 28532
 Project Name: Test
 Project Creation Date: 2015-08-20 14:19:00
 ```
